@@ -43,27 +43,28 @@ async def getSemesterDetails(semTable, semSummaryTable):
 async def get_result(rollNo: str):
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.post(f'http://results.nith.ac.in/scheme{rollNo[:2]}/studentresult/result.asp', data={'RollNumber': rollNo}) as res:
-                html = await res.text()
-                soup = bs(html, 'html.parser')
-                # tables [(1) -> student_detail, (2, 3) -> sem_1, ..., (-1) -> unnecessary details]
-                tables = soup.find_all('table', width='100%')
-                
-                response = {}
-                response["roll"] = await find_p_after('ROLL NUMBER', tables[1])
-                response["name"] = await find_p_after('STUDENT NAME', tables[1])
-                response["father_name"] = await find_p_after('FATHER NAME', tables[1])
-                response["cgpi"] = (await find_p_after('CGPI', tables[-2])).split('=')[1]
+            res = await session.post(f'http://results.nith.ac.in/scheme{rollNo[:2]}/studentresult/result.asp', 
+                                     data={'RollNumber': rollNo})
+            html = await res.text()
+            soup = bs(html, 'html.parser')
+            # tables [(1) -> student_detail, (2, 3) -> sem_1, ..., (-1) -> unnecessary details]
+            tables = soup.find_all('table', width='100%')
+            
+            response = {}
+            response["roll"] = await find_p_after('ROLL NUMBER', tables[1])
+            response["name"] = await find_p_after('STUDENT NAME', tables[1])
+            response["father_name"] = await find_p_after('FATHER NAME', tables[1])
+            response["cgpi"] = (await find_p_after('CGPI', tables[-2])).split('=')[1]
 
-                semesters = []
-                counter = 2
-                while counter + 1 < len(tables):
-                    semesters.append(await getSemesterDetails(tables[counter], tables[counter + 1]))
-                    counter += 2
+            semesters = []
+            counter = 2
+            while counter + 1 < len(tables):
+                semesters.append(await getSemesterDetails(tables[counter], tables[counter + 1]))
+                counter += 2
 
-                response["semesters"] = semesters
+            response["semesters"] = semesters
 
-                return {"status": "200", "response": response}
+            return {"status": "200", "response": response}
                 
     except Exception as err:
         return {"status": "500", "error": str(err)}
