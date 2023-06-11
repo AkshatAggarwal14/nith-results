@@ -1,0 +1,5 @@
+.space
+__pycache__
+DETA_TOKEN
+temp
+env/
